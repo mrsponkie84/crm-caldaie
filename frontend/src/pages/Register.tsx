@@ -38,7 +38,7 @@ export default function Register() {
     try {
       const { confirmPassword, ...registerData } = formData;
       await register(registerData);
-      navigate('/');
+      navigate('/app');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Errore durante la registrazione');
     } finally {
@@ -50,8 +50,8 @@ export default function Register() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center px-4 py-8">
       <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Registra la tua Azienda</h1>
-          <p className="text-gray-600 mt-2">Crea un account per il tuo CRM Caldaie</p>
+          <h1 className="text-3xl font-bold text-blue-600">CALDAIAPP</h1>
+          <p className="text-gray-600 mt-2">Inizia la prova gratuita di 30 giorni</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

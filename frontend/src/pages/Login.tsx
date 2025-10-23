@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/app');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Errore durante il login');
     } finally {
@@ -29,8 +29,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center px-4">
       <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">CRM Caldaie</h1>
-          <p className="text-gray-600 mt-2">Gestione Manutenzioni</p>
+          <h1 className="text-3xl font-bold text-blue-600">CALDAIAPP</h1>
+          <p className="text-gray-600 mt-2">Accedi al tuo account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

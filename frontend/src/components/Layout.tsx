@@ -35,7 +35,7 @@ export default function Layout() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold">CRM Caldaie</h1>
+              <h1 className="text-2xl font-bold">CALDAIAPP</h1>
               <span className="text-sm opacity-80">{user?.tenantName}</span>
               <span className="text-sm opacity-70 border-l border-blue-400 pl-4">
                 {format(currentDate, "EEEE d MMMM yyyy 'ore' HH:mm", { locale: it })}
@@ -60,25 +60,25 @@ export default function Layout() {
       <nav className="bg-white shadow-md">
         <div className="container mx-auto px-4">
           <div className="flex space-x-1">
-            <NavLink to="/" active={location.pathname === '/'}>
+            <NavLink to="/app" active={location.pathname === '/app'}>
               Dashboard
             </NavLink>
-            <NavLink to="/customers" active={isActive('/customers')}>
+            <NavLink to="/app/customers" active={isActive('/app/customers')}>
               Clienti
             </NavLink>
-            <NavLink to="/boilers" active={isActive('/boilers')}>
+            <NavLink to="/app/boilers" active={isActive('/app/boilers')}>
               Caldaie
             </NavLink>
-            <NavLink to="/calendar" active={isActive('/calendar')}>
+            <NavLink to="/app/calendar" active={isActive('/app/calendar')}>
               Calendario
             </NavLink>
-            <NavLink to="/interventions" active={isActive('/interventions')}>
+            <NavLink to="/app/interventions" active={isActive('/app/interventions')}>
               Interventi
             </NavLink>
-            <NavLink to="/invoices" active={isActive('/invoices')}>
+            <NavLink to="/app/invoices" active={isActive('/app/invoices')}>
               Fatture
             </NavLink>
-            <NavLink to="/estimates" active={isActive('/estimates')}>
+            <NavLink to="/app/estimates" active={isActive('/app/estimates')}>
               Preventivi
             </NavLink>
           </div>
