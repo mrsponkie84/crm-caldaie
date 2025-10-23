@@ -71,7 +71,7 @@ export default function CustomerDetail() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link to="/customers" className="text-blue-600 hover:text-blue-800">
+          <Link to="/app/customers" className="text-blue-600 hover:text-blue-800">
             ← Indietro
           </Link>
           <h1 className="text-3xl font-bold text-gray-800">

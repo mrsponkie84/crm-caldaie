@@ -135,7 +135,7 @@ export default function Customers() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <Link
-                    to={`/customers/${customer.id}`}
+                    to={`/app/customers/${customer.id}`}
                     className="text-blue-600 hover:text-blue-900"
                   >
                     Dettagli
