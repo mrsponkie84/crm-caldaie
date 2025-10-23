@@ -2,12 +2,12 @@
 
 # Stage 1: Build frontend
 FROM node:20-slim AS frontend-build
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
-RUN npm run build
+RUN echo "Cache bust: $CACHEBUST" && npm run build
 
 # Stage 2: Build backend
 FROM node:20-slim AS backend-build
