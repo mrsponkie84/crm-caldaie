@@ -2,7 +2,7 @@
 
 # Stage 1: Build frontend
 FROM node:20-slim AS frontend-build
-ARG CACHEBUST=2
+ARG CACHEBUST=3
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
