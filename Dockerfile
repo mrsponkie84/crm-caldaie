@@ -4,7 +4,7 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
@@ -12,7 +12,7 @@ RUN npm run build
 FROM node:20-alpine AS backend-build
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY backend/ ./
 RUN npm run prisma:generate
 RUN npm run build
@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Installa solo dipendenze di produzione backend
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copia Prisma schema e genera client
 COPY backend/prisma ./prisma
