@@ -85,7 +85,7 @@ export async function generateInterventionReport(intervention: any, res: Respons
   // Costo
   if (intervention.cost) {
     doc.fontSize(14).text('IMPORTO', { underline: true });
-    doc.fontSize(12).text(`€ ${intervention.cost.toFixed(2)}`, { bold: true });
+    doc.fontSize(12).text(`€ ${intervention.cost.toFixed(2)}`);
   }
 
   // Footer
@@ -162,7 +162,7 @@ export async function generateInvoicePDF(invoice: any, res: Response) {
   const totalsX = 400;
   doc.text(`Imponibile: € ${invoice.amount.toFixed(2)}`, totalsX);
   doc.text(`IVA (${invoice.vat}%): € ${((invoice.totalAmount - invoice.amount).toFixed(2))}`, totalsX);
-  doc.fontSize(14).text(`TOTALE: € ${invoice.totalAmount.toFixed(2)}`, totalsX, undefined, { bold: true });
+  doc.fontSize(14).text(`TOTALE: € ${invoice.totalAmount.toFixed(2)}`, totalsX);
 
   // Note
   if (invoice.notes) {
