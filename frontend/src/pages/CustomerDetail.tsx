@@ -4,6 +4,23 @@ import api from '../api/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
+// Marche principali caldaie italiane/europee
+const BOILER_BRANDS = [
+  'Vaillant',
+  'Ariston',
+  'Baxi',
+  'Beretta',
+  'Ferroli',
+  'Immergas',
+  'Riello',
+  'Saunier Duval',
+  'Junkers',
+  'Hermann',
+  'Viessmann',
+  'Bosch',
+  'Altro (inserisci manualmente)'
+];
+
 export default function CustomerDetail() {
   const { id } = useParams();
   const [customer, setCustomer] = useState<any>(null);
@@ -19,6 +36,8 @@ export default function CustomerDetail() {
     nextMaintenanceDate: '',
     notes: '',
   });
+  const [customBrand, setCustomBrand] = useState('');
+  const [customModel, setCustomModel] = useState('');
 
   useEffect(() => {
     loadCustomer();
@@ -37,9 +56,21 @@ export default function CustomerDetail() {
 
   const handleBoilerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Usa customBrand/customModel se l'utente ha scelto "Altro"
+    const finalBrand = boilerForm.brand === 'Altro (inserisci manualmente)' ? customBrand : boilerForm.brand;
+    const finalModel = boilerForm.model === 'Altro (inserisci manualmente)' ? customModel : boilerForm.model;
+
+    if (!finalBrand || !finalModel) {
+      alert('Marca e Modello sono obbligatori');
+      return;
+    }
+
     try {
       await api.post('/boilers', {
         ...boilerForm,
+        brand: finalBrand,
+        model: finalModel,
         customerId: id,
       });
       setShowBoilerModal(false);
@@ -53,6 +84,8 @@ export default function CustomerDetail() {
         nextMaintenanceDate: '',
         notes: '',
       });
+      setCustomBrand('');
+      setCustomModel('');
       loadCustomer(); // Ricarica per mostrare la nuova caldaia
     } catch (error: any) {
       alert(error.response?.data?.error || 'Errore durante la creazione della caldaia');
@@ -228,26 +261,59 @@ export default function CustomerDetail() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Marca *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={boilerForm.brand}
                     onChange={(e) => setBoilerForm({ ...boilerForm, brand: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="es. Vaillant, Ariston, Baxi"
                     required
-                  />
+                  >
+                    <option value="">Seleziona marca</option>
+                    {BOILER_BRANDS.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
+                  {boilerForm.brand === 'Altro (inserisci manualmente)' && (
+                    <input
+                      type="text"
+                      value={customBrand}
+                      onChange={(e) => setCustomBrand(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-2"
+                      placeholder="Inserisci marca personalizzata"
+                      required
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Modello *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={boilerForm.model}
                     onChange={(e) => setBoilerForm({ ...boilerForm, model: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
-                  />
+                  >
+                    <option value="">Seleziona modello</option>
+                    <option value="ecoTEC">ecoTEC</option>
+                    <option value="CLAS">CLAS</option>
+                    <option value="Luna">Luna</option>
+                    <option value="NUVOLA">NUVOLA</option>
+                    <option value="myKOMBI">myKOMBI</option>
+                    <option value="DIVATECH">DIVATECH</option>
+                    <option value="Altro (inserisci manualmente)">Altro (inserisci manualmente)</option>
+                  </select>
+                  {boilerForm.model === 'Altro (inserisci manualmente)' && (
+                    <input
+                      type="text"
+                      value={customModel}
+                      onChange={(e) => setCustomModel(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-2"
+                      placeholder="Inserisci modello personalizzato"
+                      required
+                    />
+                  )}
                 </div>
               </div>
 
