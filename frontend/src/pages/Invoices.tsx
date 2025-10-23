@@ -2,13 +2,34 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { X, Plus } from 'lucide-react';
+
+interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    customerId: '',
+    date: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 giorni
+    vat: 22,
+    notes: '',
+  });
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { description: '', quantity: 1, unitPrice: 0, amount: 0 }
+  ]);
 
   useEffect(() => {
     loadInvoices();
+    loadCustomers();
   }, []);
 
   const loadInvoices = async () => {
@@ -19,6 +40,97 @@ export default function Invoices() {
       console.error('Errore caricamento fatture:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const response = await api.get('/customers');
+      setCustomers(response.data);
+    } catch (error) {
+      console.error('Errore caricamento clienti:', error);
+    }
+  };
+
+  const handleAddItem = () => {
+    setItems([...items, { description: '', quantity: 1, unitPrice: 0, amount: 0 }]);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (items.length > 1) {
+      setItems(items.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleItemChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+
+    // Calcola amount
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
+    }
+
+    setItems(newItems);
+  };
+
+  const calculateTotals = () => {
+    const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+    const vatAmount = (subtotal * formData.vat) / 100;
+    const total = subtotal + vatAmount;
+    return { subtotal, vatAmount, total };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.customerId) {
+      alert('Seleziona un cliente');
+      return;
+    }
+
+    if (items.some(item => !item.description || item.quantity <= 0 || item.unitPrice <= 0)) {
+      alert('Compila tutti i campi delle righe');
+      return;
+    }
+
+    try {
+      await api.post('/invoices', {
+        ...formData,
+        items: items.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        }))
+      });
+
+      setShowModal(false);
+      resetForm();
+      loadInvoices();
+    } catch (error) {
+      console.error('Errore creazione promemoria:', error);
+      alert('Errore durante la creazione del promemoria');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      customerId: '',
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      vat: 22,
+      notes: '',
+    });
+    setItems([{ description: '', quantity: 1, unitPrice: 0, amount: 0 }]);
+  };
+
+  const handleStatusChange = async (invoiceId: string, newStatus: string) => {
+    try {
+      await api.put(`/invoices/${invoiceId}`, { status: newStatus });
+      loadInvoices();
+    } catch (error) {
+      console.error('Errore aggiornamento stato:', error);
+      alert('Errore durante l\'aggiornamento dello stato');
     }
   };
 
@@ -33,10 +145,10 @@ export default function Invoices() {
 
     const labels = {
       DRAFT: 'Bozza',
-      SENT: 'Inviata',
-      PAID: 'Pagata',
-      OVERDUE: 'Scaduta',
-      CANCELLED: 'Annullata',
+      SENT: 'Inviato',
+      PAID: 'Pagato',
+      OVERDUE: 'Scaduto',
+      CANCELLED: 'Annullato',
     };
 
     return (
@@ -46,6 +158,8 @@ export default function Invoices() {
     );
   };
 
+  const { subtotal, vatAmount, total } = calculateTotals();
+
   if (loading) {
     return <div className="text-center py-8">Caricamento...</div>;
   }
@@ -53,7 +167,19 @@ export default function Invoices() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Fatture</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Promemoria Pagamento</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            ℹ️ Documenti di riepilogo per i clienti. Per la fatturazione elettronica ufficiale usa il tuo software fiscale.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Nuovo Promemoria
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -74,6 +200,9 @@ export default function Invoices() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Stato
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Azioni
               </th>
             </tr>
           </thead>
@@ -111,6 +240,26 @@ export default function Invoices() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   {getStatusBadge(invoice.status)}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <div className="flex gap-2">
+                    {invoice.status === 'DRAFT' && (
+                      <button
+                        onClick={() => handleStatusChange(invoice.id, 'SENT')}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        Invia
+                      </button>
+                    )}
+                    {invoice.status === 'SENT' && (
+                      <button
+                        onClick={() => handleStatusChange(invoice.id, 'PAID')}
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        Segna Pagato
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -118,10 +267,232 @@ export default function Invoices() {
 
         {invoices.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Nessuna fattura trovata
+            Nessun promemoria trovato
           </div>
         )}
       </div>
+
+      {/* Modal Nuovo Promemoria */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Nuovo Promemoria Pagamento</h2>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Dati principali */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cliente *
+                    </label>
+                    <select
+                      value={formData.customerId}
+                      onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Seleziona cliente</option>
+                      {customers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.firstName} {customer.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      IVA %
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.vat}
+                      onChange={(e) => setFormData({ ...formData, vat: parseFloat(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data Emissione *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Scadenza Pagamento
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Righe items */}
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Righe Documento
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAddItem}
+                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Aggiungi riga
+                    </button>
+                  </div>
+
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Descrizione</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Q.tà</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Prezzo €/un</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Totale</th>
+                          <th className="px-4 py-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-2">
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded"
+                                placeholder="Es. Manutenzione caldaia"
+                                required
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 border border-gray-300 rounded"
+                                min="0"
+                                step="0.01"
+                                required
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="number"
+                                value={item.unitPrice}
+                                onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                className="w-24 px-2 py-1 border border-gray-300 rounded"
+                                min="0"
+                                step="0.01"
+                                required
+                              />
+                            </td>
+                            <td className="px-4 py-2 font-medium">
+                              € {item.amount.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-2">
+                              {items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(index)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Totali */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="space-y-2 max-w-xs ml-auto">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Subtotale:</span>
+                      <span className="font-medium">€ {subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">IVA {formData.vat}%:</span>
+                      <span className="font-medium">€ {vatAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <span>TOTALE:</span>
+                      <span className="text-blue-600">€ {total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Note */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Note (opzionale)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Note aggiuntive..."
+                  />
+                </div>
+
+                {/* Bottoni */}
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                  >
+                    Salva Promemoria
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
