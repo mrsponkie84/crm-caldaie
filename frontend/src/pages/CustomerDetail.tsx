@@ -4,22 +4,132 @@ import api from '../api/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
-// Marche principali caldaie italiane/europee
-const BOILER_BRANDS = [
-  'Vaillant',
-  'Ariston',
-  'Baxi',
-  'Beretta',
-  'Ferroli',
-  'Immergas',
-  'Riello',
-  'Saunier Duval',
-  'Junkers',
-  'Hermann',
-  'Viessmann',
-  'Bosch',
-  'Altro (inserisci manualmente)'
-];
+// Database completo marca → modelli (top 8-10 per marca)
+// Caldaie a condensazione più vendute in Italia 2020-2025, potenze residenziali
+const BOILER_DATA = {
+  'Vaillant': [
+    'ecoTEC plus',
+    'ecoTEC exclusive',
+    'ecoTEC pro',
+    'turboTEC',
+    'atmoTEC plus',
+    'ecoTEC intro',
+    'ecoFIT pure',
+    'ecoCompact'
+  ],
+  'Ariston': [
+    'CLAS ONE',
+    'CLAS X',
+    'ALTEAS ONE',
+    'GENUS ONE',
+    'CARES X',
+    'CARES PREMIUM',
+    'EGIS PLUS',
+    'ALTEAS ONE NET'
+  ],
+  'Baxi': [
+    'Luna Duo-tec+',
+    'Luna Platinum+',
+    'Nuvola Duo-tec+',
+    'Nuvola-3 Comfort',
+    'Luna-3 Comfort',
+    'Prime HT',
+    'Duo-tec Compact+',
+    'Power HT+'
+  ],
+  'Beretta': [
+    'CITY',
+    'EXCLUSIVE',
+    'POWER',
+    'MYNUTE',
+    'CIAO',
+    'METEO',
+    'FABULA',
+    'BOILER'
+  ],
+  'Ferroli': [
+    'BLUEHELIX TECH',
+    'DIVATECH',
+    'ECONCEPT TECH',
+    'BLUEHELIX PRO',
+    'DIVACONDENS',
+    'ECONCEPT',
+    'LEB TS',
+    'DIVAPROJECT'
+  ],
+  'Immergas': [
+    'VICTRIX EXA',
+    'VICTRIX ZEUS',
+    'VICTRIX PRO',
+    'HERCULES',
+    'NIKE',
+    'MAIOR',
+    'VICTRIX TERA',
+    'EOLO MAIOR'
+  ],
+  'Riello': [
+    'START CONDENS',
+    'FAMILY CONDENS',
+    'RESIDENCE CONDENS',
+    'DOMUS CONDENS',
+    'POWER CONDENS',
+    'CONDEXA PRO',
+    'i-Concept',
+    'NAOS CONDENS'
+  ],
+  'Saunier Duval': [
+    'Thema Condens',
+    'Isomax Condens',
+    'Isotwin Condens',
+    'Themafast Condens',
+    'Isofast Condens',
+    'Duomax Condens',
+    'Semiafast',
+    'ThemaPlus Condens'
+  ],
+  'Junkers': [
+    'Cerapur Excellence',
+    'Cerapur Comfort',
+    'Cerapur Smart',
+    'Ceraclass Excellence',
+    'Cerapur Acu',
+    'Cerapur ZWBC',
+    'Eurostar',
+    'Cerastar'
+  ],
+  'Hermann': [
+    'Micraplus',
+    'Supermaster',
+    'Habitat',
+    'Prisma',
+    'Supermicra',
+    'Eura',
+    'Megamaster',
+    'Superquattro'
+  ],
+  'Viessmann': [
+    'Vitodens 200-W',
+    'Vitodens 100-W',
+    'Vitodens 050-W',
+    'Vitodens 222-F',
+    'Vitodens 111-W',
+    'Vitodens 242-F',
+    'Vitodens 300-W',
+    'Vitodens 333-F'
+  ],
+  'Bosch': [
+    'Condens 7000i W',
+    'Condens 2300i W',
+    'Condens 5300i WM',
+    'Condens 7000F',
+    'Condens GC7000iW',
+    'Condens 2500W',
+    'Condens 3000W',
+    'Condens 9000iW'
+  ]
+};
+
+const BOILER_BRANDS = Object.keys(BOILER_DATA);
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -38,10 +148,22 @@ export default function CustomerDetail() {
   });
   const [customBrand, setCustomBrand] = useState('');
   const [customModel, setCustomModel] = useState('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   useEffect(() => {
     loadCustomer();
   }, [id]);
+
+  // Aggiorna i modelli disponibili quando cambia la marca
+  useEffect(() => {
+    if (boilerForm.brand && boilerForm.brand !== 'Altro (inserisci manualmente)') {
+      setAvailableModels(BOILER_DATA[boilerForm.brand as keyof typeof BOILER_DATA] || []);
+      // Reset modello quando cambia marca
+      setBoilerForm(prev => ({ ...prev, model: '' }));
+    } else {
+      setAvailableModels([]);
+    }
+  }, [boilerForm.brand]);
 
   const loadCustomer = async () => {
     try {
@@ -86,6 +208,7 @@ export default function CustomerDetail() {
       });
       setCustomBrand('');
       setCustomModel('');
+      setAvailableModels([]);
       loadCustomer(); // Ricarica per mostrare la nuova caldaia
     } catch (error: any) {
       alert(error.response?.data?.error || 'Errore durante la creazione della caldaia');
@@ -257,6 +380,7 @@ export default function CustomerDetail() {
             <h2 className="text-2xl font-bold mb-6">Nuova Caldaia</h2>
             <form onSubmit={handleBoilerSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
+                {/* Marca */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Marca *
@@ -273,6 +397,7 @@ export default function CustomerDetail() {
                         {brand}
                       </option>
                     ))}
+                    <option value="Altro (inserisci manualmente)">Altro (inserisci manualmente)</option>
                   </select>
                   {boilerForm.brand === 'Altro (inserisci manualmente)' && (
                     <input
@@ -285,6 +410,8 @@ export default function CustomerDetail() {
                     />
                   )}
                 </div>
+
+                {/* Modello */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Modello *
@@ -294,17 +421,25 @@ export default function CustomerDetail() {
                     onChange={(e) => setBoilerForm({ ...boilerForm, model: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
+                    disabled={!boilerForm.brand || boilerForm.brand === 'Altro (inserisci manualmente)'}
                   >
-                    <option value="">Seleziona modello</option>
-                    <option value="ecoTEC">ecoTEC</option>
-                    <option value="CLAS">CLAS</option>
-                    <option value="Luna">Luna</option>
-                    <option value="NUVOLA">NUVOLA</option>
-                    <option value="myKOMBI">myKOMBI</option>
-                    <option value="DIVATECH">DIVATECH</option>
-                    <option value="Altro (inserisci manualmente)">Altro (inserisci manualmente)</option>
+                    <option value="">
+                      {!boilerForm.brand
+                        ? 'Seleziona prima una marca'
+                        : boilerForm.brand === 'Altro (inserisci manualmente)'
+                        ? 'Inserisci manualmente sotto'
+                        : 'Seleziona modello'}
+                    </option>
+                    {availableModels.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                    {boilerForm.brand && boilerForm.brand !== 'Altro (inserisci manualmente)' && (
+                      <option value="Altro (inserisci manualmente)">Altro (inserisci manualmente)</option>
+                    )}
                   </select>
-                  {boilerForm.model === 'Altro (inserisci manualmente)' && (
+                  {(boilerForm.model === 'Altro (inserisci manualmente)' || boilerForm.brand === 'Altro (inserisci manualmente)') && (
                     <input
                       type="text"
                       value={customModel}
@@ -401,7 +536,22 @@ export default function CustomerDetail() {
               <div className="flex justify-end space-x-4 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowBoilerModal(false)}
+                  onClick={() => {
+                    setShowBoilerModal(false);
+                    setBoilerForm({
+                      brand: '',
+                      model: '',
+                      serialNumber: '',
+                      installationDate: '',
+                      power: '',
+                      type: '',
+                      nextMaintenanceDate: '',
+                      notes: '',
+                    });
+                    setCustomBrand('');
+                    setCustomModel('');
+                    setAvailableModels([]);
+                  }}
                   className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 >
                   Annulla
