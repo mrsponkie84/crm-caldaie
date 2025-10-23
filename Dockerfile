@@ -1,7 +1,7 @@
 # Multi-stage build per ridurre dimensioni immagine finale
 
 # Stage 1: Build frontend
-FROM node:20-alpine AS frontend-build
+FROM node:20-slim AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM node:20-alpine AS backend-build
+FROM node:20-slim AS backend-build
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm install
@@ -18,8 +18,11 @@ RUN npm run prisma:generate
 RUN npm run build
 
 # Stage 3: Production
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
+
+# Installa OpenSSL per Prisma
+RUN apt-get update -y && apt-get install -y openssl
 
 # Installa solo dipendenze di produzione backend
 COPY backend/package*.json ./
