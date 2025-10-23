@@ -8,6 +8,17 @@ export default function CustomerDetail() {
   const { id } = useParams();
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showBoilerModal, setShowBoilerModal] = useState(false);
+  const [boilerForm, setBoilerForm] = useState({
+    brand: '',
+    model: '',
+    serialNumber: '',
+    installationDate: '',
+    power: '',
+    type: '',
+    nextMaintenanceDate: '',
+    notes: '',
+  });
 
   useEffect(() => {
     loadCustomer();
@@ -21,6 +32,30 @@ export default function CustomerDetail() {
       console.error('Errore caricamento cliente:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBoilerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/boilers', {
+        ...boilerForm,
+        customerId: id,
+      });
+      setShowBoilerModal(false);
+      setBoilerForm({
+        brand: '',
+        model: '',
+        serialNumber: '',
+        installationDate: '',
+        power: '',
+        type: '',
+        nextMaintenanceDate: '',
+        notes: '',
+      });
+      loadCustomer(); // Ricarica per mostrare la nuova caldaia
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Errore durante la creazione della caldaia');
     }
   };
 
@@ -76,8 +111,14 @@ export default function CustomerDetail() {
 
       {/* Caldaie */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Caldaie ({customer.boilers.length})</h2>
+          <button
+            onClick={() => setShowBoilerModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          >
+            + Nuova Caldaia
+          </button>
         </div>
         <div className="divide-y divide-gray-200">
           {customer.boilers.length === 0 ? (
@@ -98,6 +139,11 @@ export default function CustomerDetail() {
                     {boiler.power && (
                       <p className="text-sm text-gray-600">
                         Potenza: {boiler.power}
+                      </p>
+                    )}
+                    {boiler.type && (
+                      <p className="text-sm text-gray-600">
+                        Tipo: {boiler.type}
                       </p>
                     )}
                   </div>
@@ -170,6 +216,141 @@ export default function CustomerDetail() {
           )}
         </div>
       </div>
+
+      {/* Modal Nuova Caldaia */}
+      {showBoilerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Nuova Caldaia</h2>
+            <form onSubmit={handleBoilerSubmit} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Marca *
+                  </label>
+                  <input
+                    type="text"
+                    value={boilerForm.brand}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, brand: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="es. Vaillant, Ariston, Baxi"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Modello *
+                  </label>
+                  <input
+                    type="text"
+                    value={boilerForm.model}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, model: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Matricola *
+                </label>
+                <input
+                  type="text"
+                  value={boilerForm.serialNumber}
+                  onChange={(e) => setBoilerForm({ ...boilerForm, serialNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data Installazione
+                  </label>
+                  <input
+                    type="date"
+                    value={boilerForm.installationDate}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, installationDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prossima Manutenzione
+                  </label>
+                  <input
+                    type="date"
+                    value={boilerForm.nextMaintenanceDate}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, nextMaintenanceDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Potenza
+                  </label>
+                  <input
+                    type="text"
+                    value={boilerForm.power}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, power: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="es. 24 kW"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo
+                  </label>
+                  <select
+                    value={boilerForm.type}
+                    onChange={(e) => setBoilerForm({ ...boilerForm, type: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleziona tipo</option>
+                    <option value="Condensazione">Condensazione</option>
+                    <option value="Tradizionale">Tradizionale</option>
+                    <option value="Camera stagna">Camera stagna</option>
+                    <option value="Camera aperta">Camera aperta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Note
+                </label>
+                <textarea
+                  value={boilerForm.notes}
+                  onChange={(e) => setBoilerForm({ ...boilerForm, notes: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowBoilerModal(false)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                >
+                  Crea Caldaia
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
