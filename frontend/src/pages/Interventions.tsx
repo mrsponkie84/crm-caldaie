@@ -92,6 +92,23 @@ export default function Interventions() {
     }
   };
 
+  const handleStatusChange = async (interventionId: string, newStatus: string) => {
+    try {
+      await api.put(`/interventions/${interventionId}`, {
+        status: newStatus,
+        ...(newStatus === 'COMPLETED' && { completedAt: new Date().toISOString() })
+      });
+      loadInterventions();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Errore durante l\'aggiornamento');
+    }
+  };
+
+  const isOverdue = (intervention: any) => {
+    if (intervention.status !== 'SCHEDULED') return false;
+    return new Date(intervention.scheduledAt) < new Date();
+  };
+
   if (loading) {
     return <div className="text-center py-8">Caricamento...</div>;
   }
@@ -176,6 +193,11 @@ export default function Interventions() {
                         {intervention.status === 'IN_PROGRESS' && 'In Corso'}
                         {intervention.status === 'CANCELLED' && 'Annullato'}
                       </span>
+                      {isOverdue(intervention) && (
+                        <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                          Scaduto
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">
                         {intervention.type === 'ORDINARY_MAINTENANCE' && 'Manutenzione Ordinaria'}
                         {intervention.type === 'URGENT_REPAIR' && 'Riparazione Urgente'}
@@ -202,6 +224,42 @@ export default function Interventions() {
                     <p className="text-xs text-gray-500 mt-2">
                       Tecnico: {intervention.technician.firstName} {intervention.technician.lastName}
                     </p>
+
+                    {/* Pulsanti cambio stato */}
+                    <div className="flex gap-2 mt-3">
+                      {intervention.status === 'SCHEDULED' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusChange(intervention.id, 'IN_PROGRESS')}
+                            className="px-3 py-1 text-xs bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
+                          >
+                            Inizia
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(intervention.id, 'COMPLETED')}
+                            className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition"
+                          >
+                            Completa
+                          </button>
+                        </>
+                      )}
+                      {intervention.status === 'IN_PROGRESS' && (
+                        <button
+                          onClick={() => handleStatusChange(intervention.id, 'COMPLETED')}
+                          className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition"
+                        >
+                          Completa
+                        </button>
+                      )}
+                      {(intervention.status === 'SCHEDULED' || intervention.status === 'IN_PROGRESS') && (
+                        <button
+                          onClick={() => handleStatusChange(intervention.id, 'CANCELLED')}
+                          className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition"
+                        >
+                          Annulla
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right ml-4">

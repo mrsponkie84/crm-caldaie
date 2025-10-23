@@ -1,10 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    // Aggiorna la data ogni minuto
+    const interval = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -24,6 +37,9 @@ export default function Layout() {
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold">CRM Caldaie</h1>
               <span className="text-sm opacity-80">{user?.tenantName}</span>
+              <span className="text-sm opacity-70 border-l border-blue-400 pl-4">
+                {format(currentDate, "EEEE d MMMM yyyy 'ore' HH:mm", { locale: it })}
+              </span>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm">
