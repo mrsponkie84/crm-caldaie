@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tenant = Azienda (ogni azienda ha i suoi dati isolati)
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String   // Nome azienda
+  email     String   @unique
+  phone     String?
+  address   String?
+  vatNumber String?  // Partita IVA
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  customers  Customer[]
+  invoices   Invoice[]
+  estimates  Estimate[]
+
+  @@map("tenants")
+}
+
+// Utenti dell'azienda (tecnici, amministratori)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // hashed
+  firstName String
+  lastName  String
+  role      UserRole @default(TECHNICIAN)
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  interventions Intervention[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN       // Amministratore azienda
+  TECHNICIAN  // Tecnico
+  OPERATOR    // Operatore (solo lettura/calendario)
+}
+
+// Clienti finali dell'azienda
+model Customer {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String
+  address   String
+  city      String
+  postalCode String?
+  notes     String?
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  boilers       Boiler[]
+  interventions Intervention[]
+  invoices      Invoice[]
+  estimates     Estimate[]
+
+  @@map("customers")
+}
+
+// Caldaie installate presso i clienti
+model Boiler {
+  id                String    @id @default(cuid())
+  customerId        String
+  brand             String    // Marca (es. Vaillant, Ariston, Baxi)
+  model             String    // Modello
+  serialNumber      String    // Matricola
+  installationDate  DateTime?
+  power             String?   // Potenza (es. "24 kW")
+  type              String?   // Tipo (Condensazione, Tradizionale, etc)
+  nextMaintenanceDate DateTime? // Prossima manutenzione obbligatoria
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  interventions Intervention[]
+  documents     Document[]
+
+  @@map("boilers")
+}
+
+// Interventi (manutenzioni ordinarie e urgenti)
+model Intervention {
+  id          String           @id @default(cuid())
+  customerId  String
+  boilerId    String?
+  userId      String           // Tecnico assegnato
+  type        InterventionType
+  status      InterventionStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  completedAt DateTime?
+  duration    Int?             // Durata in minuti
+  description String?
+  workDone    String?          // Lavori eseguiti
+  notes       String?
+  cost        Float?           // Costo intervento
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  boiler    Boiler?   @relation(fields: [boilerId], references: [id], onDelete: SetNull)
+  technician User     @relation(fields: [userId], references: [id])
+  documents Document[]
+
+  @@map("interventions")
+}
+
+enum InterventionType {
+  ORDINARY_MAINTENANCE   // Manutenzione ordinaria
+  URGENT_REPAIR         // Riparazione urgente
+  INSPECTION            // Ispezione
+  INSTALLATION          // Installazione
+  CERTIFICATION         // Certificazione (bollino blu)
+}
+
+enum InterventionStatus {
+  SCHEDULED   // Programmato
+  IN_PROGRESS // In corso
+  COMPLETED   // Completato
+  CANCELLED   // Annullato
+}
+
+// Documenti e certificazioni
+model Document {
+  id             String    @id @default(cuid())
+  interventionId String?
+  boilerId       String?
+  fileName       String
+  filePath       String
+  fileType       String    // pdf, jpg, png, etc
+  documentType   DocumentType
+  description    String?
+  uploadedAt     DateTime  @default(now())
+
+  intervention Intervention? @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+  boiler       Boiler?       @relation(fields: [boilerId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+enum DocumentType {
+  REPORT          // Rapportino intervento
+  CERTIFICATION   // Certificazione (bollino blu)
+  INVOICE_DOC     // Fattura
+  PHOTO           // Foto
+  OTHER           // Altro
+}
+
+// Fatture
+model Invoice {
+  id          String        @id @default(cuid())
+  tenantId    String
+  customerId  String
+  invoiceNumber String      @unique
+  date        DateTime
+  dueDate     DateTime?
+  amount      Float
+  vat         Float         @default(22) // IVA %
+  totalAmount Float
+  status      InvoiceStatus @default(DRAFT)
+  notes       String?
+  items       InvoiceItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT     // Bozza
+  SENT      // Inviata
+  PAID      // Pagata
+  OVERDUE   // Scaduta
+  CANCELLED // Annullata
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float
+  unitPrice   Float
+  amount      Float
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+// Preventivi
+model Estimate {
+  id            String         @id @default(cuid())
+  tenantId      String
+  customerId    String
+  estimateNumber String        @unique
+  date          DateTime
+  validUntil    DateTime
+  amount        Float
+  vat           Float          @default(22)
+  totalAmount   Float
+  status        EstimateStatus @default(DRAFT)
+  notes         String?
+  items         EstimateItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("estimates")
+}
+
+enum EstimateStatus {
+  DRAFT     // Bozza
+  SENT      // Inviato
+  ACCEPTED  // Accettato
+  REJECTED  // Rifiutato
+  EXPIRED   // Scaduto
+}
+
+model EstimateItem {
+  id          String  @id @default(cuid())
+  estimateId  String
+  description String
+  quantity    Float
+  unitPrice   Float
+  amount      Float
+
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@map("estimate_items")
+}
