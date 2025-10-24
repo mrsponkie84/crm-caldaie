@@ -11,6 +11,8 @@ import estimateRoutes from './routes/estimates';
 import documentRoutes from './routes/documents';
 import dashboardRoutes from './routes/dashboard';
 import pdfRoutes from './routes/pdf';
+import condominiumRoutes from './routes/condominiums';
+import condominiumAdministratorRoutes from './routes/condominiumAdministrators';
 
 dotenv.config();
 
@@ -32,6 +34,8 @@ app.use('/api/estimates', estimateRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pdf', pdfRoutes);
+app.use('/api/condominiums', condominiumRoutes);
+app.use('/api/condominium-administrators', condominiumAdministratorRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

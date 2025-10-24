@@ -6,6 +6,7 @@ import { it } from 'date-fns/locale';
 import {
   LayoutDashboard,
   Users,
+  Building2,
   Flame,
   Calendar,
   Wrench,
@@ -65,6 +66,14 @@ export default function Layout() {
             active={isActive('/app/customers')}
           >
             Clienti
+          </SidebarLink>
+
+          <SidebarLink
+            to="/app/condominiums"
+            icon={<Building2 className="w-5 h-5" />}
+            active={isActive('/app/condominiums')}
+          >
+            Condomini
           </SidebarLink>
 
           <SidebarLink

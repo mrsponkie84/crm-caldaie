@@ -11,6 +11,8 @@ import Interventions from './pages/Interventions';
 import Calendar from './pages/Calendar';
 import Invoices from './pages/Invoices';
 import Estimates from './pages/Estimates';
+import Condominiums from './pages/Condominiums';
+import CondominiumDetail from './pages/CondominiumDetail';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +42,8 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="condominiums" element={<Condominiums />} />
+            <Route path="condominiums/:id" element={<CondominiumDetail />} />
             <Route path="boilers" element={<Boilers />} />
             <Route path="interventions" element={<Interventions />} />
             <Route path="calendar" element={<Calendar />} />

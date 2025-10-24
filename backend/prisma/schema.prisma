@@ -18,10 +18,12 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
-  customers  Customer[]
-  invoices   Invoice[]
-  estimates  Estimate[]
+  users                      User[]
+  customers                  Customer[]
+  invoices                   Invoice[]
+  estimates                  Estimate[]
+  condominiums               Condominium[]
+  condominiumAdministrators  CondominiumAdministrator[]
 
   @@map("tenants")
 }
@@ -70,6 +72,7 @@ model Customer {
   interventions Intervention[]
   invoices      Invoice[]
   estimates     Estimate[]
+  apartments    Apartment[]    // Appartamenti in condomini
 
   @@map("customers")
 }
@@ -77,19 +80,22 @@ model Customer {
 // Caldaie installate presso i clienti
 model Boiler {
   id                String    @id @default(cuid())
-  customerId        String
+  customerId        String?   // Opzionale se caldaia condominiale centralizzata
+  condominiumId     String?   // Se caldaia condominiale centralizzata
   brand             String    // Marca (es. Vaillant, Ariston, Baxi)
   model             String    // Modello
   serialNumber      String    // Matricola
   installationDate  DateTime?
   power             String?   // Potenza (es. "24 kW")
   type              String?   // Tipo (Condensazione, Tradizionale, etc)
+  isShared          Boolean   @default(false) // true se caldaia centralizzata condominiale
   nextMaintenanceDate DateTime? // Prossima manutenzione obbligatoria
   notes             String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  condominium   Condominium?   @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
   interventions Intervention[]
   documents     Document[]
 
@@ -98,26 +104,28 @@ model Boiler {
 
 // Interventi (manutenzioni ordinarie e urgenti)
 model Intervention {
-  id          String           @id @default(cuid())
-  customerId  String
-  boilerId    String?
-  userId      String           // Tecnico assegnato
-  type        InterventionType
-  status      InterventionStatus @default(SCHEDULED)
-  scheduledAt DateTime
-  completedAt DateTime?
-  duration    Int?             // Durata in minuti
-  description String?
-  workDone    String?          // Lavori eseguiti
-  notes       String?
-  cost        Float?           // Costo intervento
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id            String           @id @default(cuid())
+  customerId    String?          // Opzionale se intervento su condominio
+  condominiumId String?          // Se intervento su caldaia centralizzata
+  boilerId      String?
+  userId        String           // Tecnico assegnato
+  type          InterventionType
+  status        InterventionStatus @default(SCHEDULED)
+  scheduledAt   DateTime
+  completedAt   DateTime?
+  duration      Int?             // Durata in minuti
+  description   String?
+  workDone      String?          // Lavori eseguiti
+  notes         String?
+  cost          Float?           // Costo intervento
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
-  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  boiler    Boiler?   @relation(fields: [boilerId], references: [id], onDelete: SetNull)
-  technician User     @relation(fields: [userId], references: [id])
-  documents Document[]
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  boiler      Boiler?      @relation(fields: [boilerId], references: [id], onDelete: SetNull)
+  technician  User         @relation(fields: [userId], references: [id])
+  documents   Document[]
 
   @@map("interventions")
 }
@@ -165,23 +173,25 @@ enum DocumentType {
 
 // Fatture
 model Invoice {
-  id          String        @id @default(cuid())
-  tenantId    String
-  customerId  String
-  invoiceNumber String      @unique
-  date        DateTime
-  dueDate     DateTime?
-  amount      Float
-  vat         Float         @default(22) // IVA %
-  totalAmount Float
-  status      InvoiceStatus @default(DRAFT)
-  notes       String?
-  items       InvoiceItem[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  tenantId      String
+  customerId    String?       // Opzionale se fattura a condominio
+  condominiumId String?       // Se fattura intestata al condominio
+  invoiceNumber String        @unique
+  date          DateTime
+  dueDate       DateTime?
+  amount        Float
+  vat           Float         @default(22) // IVA %
+  totalAmount   Float
+  status        InvoiceStatus @default(DRAFT)
+  notes         String?
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
 
   @@map("invoices")
 }
@@ -249,4 +259,72 @@ model EstimateItem {
   estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
   @@map("estimate_items")
+}
+
+// Amministratore di condominio
+model CondominiumAdministrator {
+  id            String   @id @default(cuid())
+  tenantId      String
+  firstName     String
+  lastName      String
+  company       String?  // Studio/Società
+  email         String?
+  phone         String?
+  officeAddress String?  // Indirizzo studio
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  condominiums Condominium[]
+
+  @@map("condominium_administrators")
+}
+
+// Condominio
+model Condominium {
+  id              String   @id @default(cuid())
+  tenantId        String
+  administratorId String?  // Amministratore di condominio
+  name            String   // Nome condominio
+  address         String
+  city            String
+  postalCode      String?
+  phone           String?
+  email           String?
+  fiscalCode      String?  // Codice Fiscale
+  vatNumber       String?  // Partita IVA
+  totalApartments Int?     // Numero totale appartamenti
+  systemType      String?  // Tipo impianto (centralizzato/autonomo/misto)
+  buildYear       Int?     // Anno costruzione
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant        Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  administrator CondominiumAdministrator? @relation(fields: [administratorId], references: [id], onDelete: SetNull)
+  apartments    Apartment[]
+  boilers       Boiler[]      // Caldaie centralizzate
+  interventions Intervention[] // Interventi su caldaia centralizzata
+  invoices      Invoice[]     // Fatture intestate al condominio
+
+  @@map("condominiums")
+}
+
+// Appartamento (join table cliente-condominio many-to-many)
+model Apartment {
+  id              String   @id @default(cuid())
+  condominiumId   String
+  customerId      String
+  apartmentNumber String   // Numero appartamento (es. "Int. 3", "Scala A - Piano 2")
+  floor           String?  // Piano
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([condominiumId, apartmentNumber]) // Numero appartamento unico per condominio
+  @@map("apartments")
 }
