@@ -12,6 +12,8 @@ import {
   Wrench,
   FileText,
   Receipt,
+  Phone,
+  Package,
   LogOut,
   ChevronDown
 } from 'lucide-react';
