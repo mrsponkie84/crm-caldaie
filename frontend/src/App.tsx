@@ -15,6 +15,7 @@ import Condominiums from './pages/Condominiums';
 import CondominiumDetail from './pages/CondominiumDetail';
 import Calls from './pages/Calls';
 import Inventory from './pages/Inventory';
+import Analytics from './pages/Analytics';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ function App() {
             <Route path="estimates" element={<Estimates />} />
             <Route path="calls" element={<Calls />} />
             <Route path="inventory" element={<Inventory />} />
+            <Route path="analytics" element={<Analytics />} />
           </Route>
         </Routes>
       </BrowserRouter>

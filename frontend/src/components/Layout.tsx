@@ -14,6 +14,7 @@ import {
   Receipt,
   Phone,
   Package,
+  TrendingUp,
   LogOut,
   ChevronDown
 } from 'lucide-react';
@@ -132,6 +133,14 @@ export default function Layout() {
             active={isActive('/app/inventory')}
           >
             Magazzino
+          </SidebarLink>
+
+          <SidebarLink
+            to="/app/analytics"
+            icon={<TrendingUp className="w-5 h-5" />}
+            active={isActive('/app/analytics')}
+          >
+            Analytics
           </SidebarLink>
         </nav>
 
