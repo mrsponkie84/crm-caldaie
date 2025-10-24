@@ -75,11 +75,11 @@ async function seedDemo() {
 
   // Trova l'utente demo
   const demoUser = await prisma.user.findFirst({
-    where: { email: 'demo@caldaiapp.com' }
+    where: { email: 'liontijacopo@gmail.com' }
   });
 
   if (!demoUser) {
-    console.error('❌ Utente demo non trovato!');
+    console.error('❌ Utente demo non trovato! Cercato: liontijacopo@gmail.com');
     return;
   }
 
