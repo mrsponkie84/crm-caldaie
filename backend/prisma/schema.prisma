@@ -14,7 +14,18 @@ model Tenant {
   email     String   @unique
   phone     String?
   address   String?
-  vatNumber String?  // Partita IVA
+  city      String?  // Città
+  postalCode String? // CAP
+  province  String?  // Provincia (sigla 2 char es. "MI")
+  country   String   @default("IT") // Nazione
+
+  // Dati Fiscali per Fatturazione Elettronica
+  vatNumber       String?  // Partita IVA (11 cifre)
+  fiscalCode      String?  // Codice Fiscale (16 char alfanumerico)
+  sdiCode         String?  // Codice Destinatario SDI (7 char) - Se l'azienda riceve fatture
+  pec             String?  // PEC aziendale
+  taxRegime       String?  // Regime fiscale (es. "RF01" = Ordinario)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -66,7 +77,16 @@ model Customer {
   address   String
   city      String
   postalCode String?
+  province  String?  // Provincia (sigla 2 char es. "RM")
+  country   String   @default("IT") // Nazione
   notes     String?
+
+  // Dati Fiscali per Fatturazione Elettronica
+  vatNumber       String?  // Partita IVA (se azienda/professionista)
+  fiscalCode      String?  // Codice Fiscale (sempre obbligatorio per Italia)
+  sdiCode         String?  // Codice Destinatario SDI (7 char) - per fatture elettroniche
+  pec             String?  // PEC cliente (alternativa a sdiCode)
+
   tenantId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,6 +212,20 @@ model Invoice {
   status        InvoiceStatus @default(DRAFT)
   notes         String?
   items         InvoiceItem[]
+
+  // Campi Fatturazione Elettronica
+  isElectronic          Boolean                 @default(false) // Se è fattura elettronica
+  xmlContent            String?                 // XML FatturaPA generato
+  sdiStatus             ElectronicInvoiceStatus @default(DRAFT) // Stato SDI
+  sdiIdSdi              String?                 // ID univoco SDI
+  sdiTransmissionId     String?                 // ID trasmissione provider
+  recipientCode         String?                 // Codice Destinatario (7 char) o PEC
+  recipientPec          String?                 // PEC destinatario (se non ha codice)
+  transmissionDate      DateTime?               // Data invio a SDI
+  deliveryDate          DateTime?               // Data consegna al destinatario
+  acceptanceDate        DateTime?               // Data accettazione
+  sdiNotifications      String?                 // JSON notifiche SDI
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -208,6 +242,18 @@ enum InvoiceStatus {
   PAID      // Pagata
   OVERDUE   // Scaduta
   CANCELLED // Annullata
+}
+
+enum ElectronicInvoiceStatus {
+  DRAFT                // Bozza (non ancora inviata)
+  TRANSMITTED          // Trasmessa al provider
+  DELIVERED_TO_SDI     // Consegnata a SDI
+  ACCEPTED_BY_SDI      // Accettata da SDI
+  DELIVERED_TO_RECIPIENT // Consegnata al destinatario
+  ACCEPTED             // Accettata dal destinatario
+  REJECTED_BY_SDI      // Rifiutata da SDI (errori formato)
+  REJECTED             // Rifiutata dal destinatario
+  FAILED               // Errore generico
 }
 
 model InvoiceItem {
