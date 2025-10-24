@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, InterventionType, InterventionStatus, CallDirection, CallStatus, MovementType, EstimateStatus, InvoiceStatus } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -210,7 +210,7 @@ router.post('/run', async (req, res) => {
     }
 
     const tenantId = demoUser.tenantId;
-    const userId = demoUser.userId;
+    const userId = demoUser.id;
 
     logs.push(`✅ Trovato utente demo - Tenant: ${tenantId}`);
 
@@ -270,19 +270,21 @@ router.post('/run', async (req, res) => {
     const createdBoilers = await prisma.boiler.createMany({ data: boilers });
     logs.push(`✅ ${createdBoilers.count} caldaie create!`);
 
-    const allBoilers = await prisma.boiler.findMany({ where: { tenantId } });
+    const allBoilers = await prisma.boiler.findMany({
+      where: { customer: { tenantId } }
+    });
 
     // 3. INTERVENTI (800)
     logs.push('🔧 Generazione 800 interventi...');
     const interventions = [];
-    const types = ['ORDINARY_MAINTENANCE', 'URGENT_REPAIR', 'INSPECTION', 'CERTIFICATION'];
-    const statuses = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+    const types: InterventionType[] = [InterventionType.ORDINARY_MAINTENANCE, InterventionType.URGENT_REPAIR, InterventionType.INSPECTION, InterventionType.CERTIFICATION];
+    const statuses: InterventionStatus[] = [InterventionStatus.SCHEDULED, InterventionStatus.IN_PROGRESS, InterventionStatus.COMPLETED, InterventionStatus.CANCELLED];
 
     for (let i = 0; i < 800; i++) {
       const boiler = randomItem(allBoilers);
       const scheduledDate = randomDate(new Date(2024, 0, 1), new Date(2025, 11, 31));
       const status = randomItem(statuses);
-      const isCompleted = status === 'COMPLETED';
+      const isCompleted = status === InterventionStatus.COMPLETED;
 
       interventions.push({
         customerId: boiler.customerId,
@@ -306,8 +308,8 @@ router.post('/run', async (req, res) => {
     // 4. CHIAMATE (600)
     logs.push('📞 Generazione 600 chiamate...');
     const calls = [];
-    const callStatuses = ['COMPLETED', 'CALLBACK_SCHEDULED', 'MISSED'];
-    const directions = ['INCOMING', 'OUTGOING'];
+    const callStatuses: CallStatus[] = [CallStatus.COMPLETED, CallStatus.CALLBACK_SCHEDULED, CallStatus.MISSED];
+    const directions: CallDirection[] = [CallDirection.INCOMING, CallDirection.OUTGOING];
 
     for (let i = 0; i < 600; i++) {
       const customer = randomItem(allCustomers);
@@ -319,9 +321,9 @@ router.post('/run', async (req, res) => {
         userId,
         direction: randomItem(directions),
         status,
-        scheduledCallback: status === 'CALLBACK_SCHEDULED' ? randomDate(now, new Date(now.getTime() + 7 * 24 * 3600000)) : null,
-        notes: status === 'CALLBACK_SCHEDULED' ? 'Cliente richiede preventivo sostituzione caldaia' : 'Richiesta informazioni',
-        duration: status === 'COMPLETED' ? randomInt(2, 15) : null,
+        scheduledCallback: status === CallStatus.CALLBACK_SCHEDULED ? randomDate(now, new Date(now.getTime() + 7 * 24 * 3600000)) : null,
+        notes: status === CallStatus.CALLBACK_SCHEDULED ? 'Cliente richiede preventivo sostituzione caldaia' : 'Richiesta informazioni',
+        duration: status === CallStatus.COMPLETED ? randomInt(2, 15) : null,
         createdAt: callDate,
         tenantId
       });
@@ -366,7 +368,7 @@ router.post('/run', async (req, res) => {
 
     for (let i = 0; i < 300; i++) {
       const product = randomItem(allProducts);
-      const type = randomItem(['IN', 'OUT']);
+      const type = randomItem([MovementType.IN, MovementType.OUT]);
       const quantity = randomInt(1, 10);
 
       movements.push({
@@ -374,7 +376,7 @@ router.post('/run', async (req, res) => {
         userId,
         type,
         quantity,
-        notes: type === 'IN' ? 'Carico merce da fornitore' : 'Utilizzo in intervento',
+        notes: type === MovementType.IN ? 'Carico merce da fornitore' : 'Utilizzo in intervento',
         createdAt: randomDate(new Date(2024, 0, 1), now)
       });
     }
@@ -406,7 +408,7 @@ router.post('/run', async (req, res) => {
         amount,
         vat,
         totalAmount,
-        status: randomItem(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED']),
+        status: randomItem([EstimateStatus.DRAFT, EstimateStatus.SENT, EstimateStatus.ACCEPTED, EstimateStatus.REJECTED]),
         notes: 'Sostituzione caldaia con nuova a condensazione'
       });
     }
@@ -439,7 +441,7 @@ router.post('/run', async (req, res) => {
         amount,
         vat,
         totalAmount,
-        status: isPaid ? 'PAID' : (dueDate < now ? 'OVERDUE' : 'SENT'),
+        status: isPaid ? InvoiceStatus.PAID : (dueDate < now ? InvoiceStatus.OVERDUE : InvoiceStatus.SENT),
         notes: 'Manutenzione caldaia'
       });
     }
