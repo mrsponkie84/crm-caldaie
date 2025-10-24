@@ -15,6 +15,7 @@ import condominiumRoutes from './routes/condominiums';
 import condominiumAdministratorRoutes from './routes/condominiumAdministrators';
 import callRoutes from './routes/calls';
 import productRoutes from './routes/products';
+import seedRoutes from './routes/seed';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/condominiums', condominiumRoutes);
 app.use('/api/condominium-administrators', condominiumAdministratorRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
