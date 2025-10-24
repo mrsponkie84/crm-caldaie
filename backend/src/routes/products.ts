@@ -228,7 +228,7 @@ router.post('/:id/movements', async (req: AuthRequest, res) => {
       prisma.inventoryMovement.create({
         data: {
           productId: req.params.id,
-          userId: req.user!.id,
+          userId: req.user!.userId,
           interventionId,
           type,
           quantity,

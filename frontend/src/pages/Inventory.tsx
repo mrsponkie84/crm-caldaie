@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Plus, AlertTriangle, TrendingUp, TrendingDown, Search, Edit, Trash2 } from 'lucide-react';
+import { Package, Plus, AlertTriangle, TrendingUp, Search, Edit, Trash2 } from 'lucide-react';
 import api from '../api/client';
 
 interface Product {
@@ -161,9 +161,9 @@ export default function Inventory() {
       (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
     )
-    .filter(p => !filterLowStock || (p.minimumStock !== null && p.quantity < p.minimumStock));
+    .filter(p => !filterLowStock || (p.minimumStock != null && p.quantity < p.minimumStock));
 
-  const lowStockCount = products.filter(p => p.minimumStock !== null && p.quantity < p.minimumStock).length;
+  const lowStockCount = products.filter(p => p.minimumStock != null && p.quantity < p.minimumStock).length;
   const totalValue = products.reduce((sum, p) => sum + (p.quantity * (p.purchasePrice || 0)), 0);
 
   if (loading) {
@@ -269,7 +269,7 @@ export default function Inventory() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredProducts.map((product) => {
-              const isLowStock = product.minimumStock !== null && product.quantity < product.minimumStock;
+              const isLowStock = product.minimumStock != null && product.quantity < product.minimumStock;
 
               return (
                 <tr key={product.id} className={`hover:bg-gray-50 ${isLowStock ? 'bg-red-50' : ''}`}>

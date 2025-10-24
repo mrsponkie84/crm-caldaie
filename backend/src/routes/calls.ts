@@ -90,7 +90,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const call = await prisma.call.create({
       data: {
         customerId,
-        userId: req.user!.id,
+        userId: req.user!.userId,
         direction,
         status,
         scheduledCallback: scheduledCallback ? new Date(scheduledCallback) : null,
