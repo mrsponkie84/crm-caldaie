@@ -262,8 +262,7 @@ router.post('/run', async (req, res) => {
         power: `${randomInt(18, 35)} kW`,
         type: 'Condensazione',
         isShared: false,
-        nextMaintenanceDate: nextMaintenance,
-        tenantId
+        nextMaintenanceDate: nextMaintenance
       });
     }
 
@@ -297,8 +296,7 @@ router.post('/run', async (req, res) => {
         duration: isCompleted ? randomInt(30, 180) : null,
         description: 'Manutenzione programmata',
         workDone: isCompleted ? 'Controllo generale, pulizia scambiatore, verifica fumi' : null,
-        cost: isCompleted ? randomInt(80, 250) : null,
-        tenantId
+        cost: isCompleted ? randomInt(80, 250) : null
       });
     }
 
