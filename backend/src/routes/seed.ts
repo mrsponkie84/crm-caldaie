@@ -72,6 +72,128 @@ function randomDate(start: Date, end: Date): Date {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
+// Pagina HTML con bottone per eseguire il seed
+router.get('/run', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Seed Dati Demo - CRM Caldaie</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+          max-width: 800px;
+          margin: 50px auto;
+          padding: 20px;
+          background: #f5f5f5;
+        }
+        .container {
+          background: white;
+          padding: 40px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2A3F54; margin-top: 0; }
+        h2 { color: #3498DB; font-size: 18px; }
+        button {
+          background: #1ABB9C;
+          color: white;
+          border: none;
+          padding: 15px 30px;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+        button:hover { background: #17a589; }
+        button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+        #result {
+          margin-top: 20px;
+          padding: 15px;
+          border-radius: 5px;
+          white-space: pre-wrap;
+          font-family: monospace;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        .success { background: #d5f4ec; color: #1ABB9C; border: 1px solid #1ABB9C; }
+        .error { background: #fadbd8; color: #E74C3C; border: 1px solid #E74C3C; }
+        .loading { background: #fff4e5; color: #F39C12; border: 1px solid #F39C12; }
+        ul { line-height: 1.8; }
+        .warning {
+          background: #fff4e5;
+          border-left: 4px solid #F39C12;
+          padding: 15px;
+          margin: 20px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🌱 Seed Dati Demo</h1>
+        <p>Questo strumento popolerà l'account <strong>liontijacopo@gmail.com</strong> con dati demo per la presentazione agli investitori.</p>
+
+        <h2>📊 Cosa verrà generato:</h2>
+        <ul>
+          <li>👥 <strong>1.200 clienti</strong> con nomi e indirizzi italiani</li>
+          <li>🔥 <strong>1.200 caldaie</strong> con brand e modelli realistici</li>
+          <li>🔧 <strong>800 interventi</strong> programmati</li>
+          <li>📞 <strong>600 chiamate</strong> con callback scheduling</li>
+          <li>📦 <strong>50 prodotti</strong> in magazzino</li>
+          <li>📊 <strong>300 movimenti</strong> di magazzino</li>
+          <li>📄 <strong>200 preventivi</strong></li>
+          <li>💰 <strong>400 fatture</strong></li>
+          <li>🏢 <strong>20 condomini</strong> con amministratori</li>
+        </ul>
+
+        <div class="warning">
+          <strong>⚠️ ATTENZIONE:</strong> Assicurati che l'account <code>liontijacopo@gmail.com</code> sia registrato nell'applicazione prima di procedere!
+        </div>
+
+        <button id="runBtn" onclick="runSeed()">🚀 Avvia Seed Dati Demo</button>
+        <div id="result"></div>
+      </div>
+
+      <script>
+        async function runSeed() {
+          const btn = document.getElementById('runBtn');
+          const result = document.getElementById('result');
+
+          btn.disabled = true;
+          result.className = 'loading';
+          result.textContent = '⏳ Generazione dati in corso... (può richiedere 1-2 minuti)\\n\\nNon chiudere questa pagina!';
+
+          try {
+            const response = await fetch('/api/seed/run', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              result.className = 'success';
+              result.textContent = data.logs.join('\\n');
+            } else {
+              result.className = 'error';
+              result.textContent = '❌ ERRORE:\\n\\n' + (data.error || 'Errore sconosciuto');
+            }
+          } catch (error) {
+            result.className = 'error';
+            result.textContent = '❌ ERRORE DI RETE:\\n\\n' + error.message;
+          } finally {
+            btn.disabled = false;
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 // ENDPOINT PER ESEGUIRE IL SEED
 router.post('/run', async (req, res) => {
   try {
