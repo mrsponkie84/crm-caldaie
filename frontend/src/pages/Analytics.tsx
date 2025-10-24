@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, FileText, Download, RefreshCw } from 'lucide-react';
 import api from '../api/client';
@@ -42,6 +43,7 @@ interface AnalyticsData {
 }
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -278,8 +280,8 @@ const Analytics = () => {
                     <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
                   </div>
                 </div>
-                <a
-                  href={alert.actionLink}
+                <button
+                  onClick={() => navigate(alert.actionLink)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     alert.type === 'warning'
                       ? 'bg-amber-600 text-white hover:bg-amber-700'
@@ -287,7 +289,7 @@ const Analytics = () => {
                   }`}
                 >
                   {alert.action}
-                </a>
+                </button>
               </div>
             ))}
           </div>
