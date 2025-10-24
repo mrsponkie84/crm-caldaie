@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Plus, MapPin, Users, Wrench, Search, Edit, Trash2 } from 'lucide-react';
-import api from '../services/api';
+import { Building2, Plus, MapPin, Search, Edit, Trash2 } from 'lucide-react';
+import api from '../api/client';
 
 interface CondominiumAdministrator {
   id: string;
