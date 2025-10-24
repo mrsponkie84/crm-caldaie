@@ -115,6 +115,22 @@ export default function Layout() {
           >
             Promemoria
           </SidebarLink>
+
+          <SidebarLink
+            to="/app/calls"
+            icon={<Phone className="w-5 h-5" />}
+            active={isActive('/app/calls')}
+          >
+            Chiamate
+          </SidebarLink>
+
+          <SidebarLink
+            to="/app/inventory"
+            icon={<Package className="w-5 h-5" />}
+            active={isActive('/app/inventory')}
+          >
+            Magazzino
+          </SidebarLink>
         </nav>
 
         {/* Footer Info */}

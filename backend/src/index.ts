@@ -13,6 +13,8 @@ import dashboardRoutes from './routes/dashboard';
 import pdfRoutes from './routes/pdf';
 import condominiumRoutes from './routes/condominiums';
 import condominiumAdministratorRoutes from './routes/condominiumAdministrators';
+import callRoutes from './routes/calls';
+import productRoutes from './routes/products';
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/condominiums', condominiumRoutes);
 app.use('/api/condominium-administrators', condominiumAdministratorRoutes);
+app.use('/api/calls', callRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

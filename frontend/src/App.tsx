@@ -13,6 +13,8 @@ import Invoices from './pages/Invoices';
 import Estimates from './pages/Estimates';
 import Condominiums from './pages/Condominiums';
 import CondominiumDetail from './pages/CondominiumDetail';
+import Calls from './pages/Calls';
+import Inventory from './pages/Inventory';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,8 @@ function App() {
             <Route path="calendar" element={<Calendar />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="estimates" element={<Estimates />} />
+            <Route path="calls" element={<Calls />} />
+            <Route path="inventory" element={<Inventory />} />
           </Route>
         </Routes>
       </BrowserRouter>

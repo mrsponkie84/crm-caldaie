@@ -24,6 +24,8 @@ model Tenant {
   estimates                  Estimate[]
   condominiums               Condominium[]
   condominiumAdministrators  CondominiumAdministrator[]
+  calls                      Call[]
+  products                   Product[]
 
   @@map("tenants")
 }
@@ -40,8 +42,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  interventions Intervention[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  interventions      Intervention[]
+  calls              Call[]
+  inventoryMovements InventoryMovement[]
 
   @@map("users")
 }
@@ -73,6 +77,7 @@ model Customer {
   invoices      Invoice[]
   estimates     Estimate[]
   apartments    Apartment[]    // Appartamenti in condomini
+  calls         Call[]
 
   @@map("customers")
 }
@@ -121,11 +126,12 @@ model Intervention {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
-  boiler      Boiler?      @relation(fields: [boilerId], references: [id], onDelete: SetNull)
-  technician  User         @relation(fields: [userId], references: [id])
-  documents   Document[]
+  customer           Customer?           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  condominium        Condominium?        @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  boiler             Boiler?             @relation(fields: [boilerId], references: [id], onDelete: SetNull)
+  technician         User                @relation(fields: [userId], references: [id])
+  documents          Document[]
+  inventoryMovements InventoryMovement[]
 
   @@map("interventions")
 }
@@ -327,4 +333,81 @@ model Apartment {
 
   @@unique([condominiumId, apartmentNumber]) // Numero appartamento unico per condominio
   @@map("apartments")
+}
+
+// Chiamate con clienti
+model Call {
+  id                String       @id @default(cuid())
+  tenantId          String
+  customerId        String
+  userId            String       // Utente che ha gestito la chiamata
+  direction         CallDirection
+  status            CallStatus   @default(COMPLETED)
+  scheduledCallback DateTime?    // Data/ora richiamo programmato
+  notes             String?
+  duration          Int?         // Durata in minuti
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@map("calls")
+}
+
+enum CallDirection {
+  INCOMING  // Chiamata in entrata
+  OUTGOING  // Chiamata in uscita
+}
+
+enum CallStatus {
+  COMPLETED          // Completata
+  CALLBACK_SCHEDULED // Da richiamare
+  MISSED            // Persa
+}
+
+// Prodotti magazzino (ricambi)
+model Product {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  code            String?  // Codice articolo
+  category        String?  // Categoria (es. Valvole, Pompe, Guarnizioni)
+  quantity        Float    @default(0)
+  purchasePrice   Float?   // Prezzo di acquisto
+  sellingPrice    Float?   // Prezzo di vendita
+  supplier        String?  // Fornitore
+  minimumStock    Float?   // Scorta minima
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements InventoryMovement[]
+
+  @@map("products")
+}
+
+// Movimenti di magazzino
+model InventoryMovement {
+  id             String        @id @default(cuid())
+  productId      String
+  interventionId String?       // Se movimento legato a intervento
+  userId         String        // Chi ha registrato il movimento
+  type           MovementType
+  quantity       Float
+  notes          String?
+  createdAt      DateTime      @default(now())
+
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  intervention Intervention? @relation(fields: [interventionId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@map("inventory_movements")
+}
+
+enum MovementType {
+  IN   // Carico (acquisto)
+  OUT  // Scarico (utilizzo in intervento)
 }
